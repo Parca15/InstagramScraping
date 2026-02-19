@@ -48,25 +48,38 @@ class TrendService:
                 driver.get(target_url)
                 time.sleep(5)
                 
-                # 2. Utilizar JavaScript para leer el título desde los metatags (sin requerir selectores inestables)
-                meta_title = driver.execute_script("""
+                # 2. Utilizar JavaScript para extraer la mejor palabra clave de los metadatos de la publicación
+                trend_word = driver.execute_script("""
+                    // Primera estrategia: Extraer el primer hashtag de la descripción (más preciso para categorías)
+                    var metaDesc = document.querySelector('meta[property="og:description"]') || document.querySelector('meta[name="description"]');
+                    if (metaDesc) {
+                        var d = metaDesc.getAttribute('content');
+                        // Buscar el primer hashtag con al menos 3 letras
+                        var hashtags = d.match(/#([a-zA-ZáéíóúñÁÉÍÓÚÑ0-9_]{3,})/g);
+                        if (hashtags && hashtags.length > 0) {
+                            return hashtags[0].replace('#', '');
+                        }
+                    }
+                    
+                    // Segunda estrategia fallback: Extraer una palabra representativa del título
                     var m = document.querySelector('meta[property="og:title"]');
-                    return m ? m.getAttribute('content') : "";
+                    if (m) {
+                        var title = m.getAttribute('content');
+                        var theme = title.replace(" | Instagram", "").split('|')[0].trim();
+                        // Buscar la primera palabra sustancial (más de 3 letras estándar)
+                        var words = theme.match(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]{4,}/g);
+                        if (words && words.length > 0) {
+                            return words[0];
+                        }
+                    }
+                    return "";
                 """)
                 
-                if meta_title:
-                    # 3. Limpieza: El estándar de IG suele ser "Motivo del Tema | Instagram"
-                    # Eliminamos sufijos de marca
-                    raw_theme = meta_title.replace(" | Instagram", "").replace(" - Instagram", "").split('|')[0].split('-')[0].strip()
-                    
-                    # REQUISITO DEL CLIENTE: Extraer solo la primera palabra clave principal del sujeto
-                    # Evitamos saltos de línea y fragmentos envueltos en comillas.
-                    first_word = raw_theme.split(' ')[0].split("'")[0].split('"')[0].strip()
-                    
-                    # Validamos longitud y algunas palabras clave inútiles comunes
-                    if first_word and len(first_word) > 2 and first_word.lower() not in ["post", "reel", "video"]:
-                        print(f"  Tendencia de palabra única detectada: {first_word}")
-                        return first_word.lower()
+                if trend_word:
+                    trend_word = trend_word.lower()
+                    if trend_word not in ["post", "reel", "video", "instagram", "photo"]:
+                        print(f"  Tendencia o categoría extraída automáticamente: {trend_word}")
+                        return trend_word
         except Exception as e:
             print(f"  Error en detección semántica: {e}")
 
