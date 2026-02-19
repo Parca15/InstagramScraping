@@ -37,18 +37,28 @@ class AuthService:
         else:
             print(f"Sesión activa con cookies reutilizadas.")
 
+
     def _perform_login(self):
         """Ejecuta el login manual ingresando credenciales y simulando un comportamiento humano."""
         try:
+            # Esperar a que la página cargue completamente
+            time.sleep(8)
+            
             # Limpiar popups de bloqueo (ej. "Aceptar cookies")
             self.driver.execute_script("""
                 document.querySelectorAll('button._a9--._ap32, button[innerHTML*="cookies"], button[innerHTML*="Aceptar"]').forEach(el => el.click());
             """)
             time.sleep(2)
-
-            # Encontrar los campos de usuario y contraseña
-            user_field = self.driver.find_element(By.NAME, "username")
-            pass_field = self.driver.find_element(By.NAME, "password")
+            
+            # Intentar encontrar campos por nombre directamente
+            print("Buscando campos de login...")
+            try:
+                user_field = self.driver.find_element(By.NAME, "username")
+                pass_field = self.driver.find_element(By.NAME, "password")
+            except:
+                # Fallback por selectores más amplios en caso de variaciones de IG
+                user_field = self.driver.find_element(By.XPATH, "//input[@type='text']")
+                pass_field = self.driver.find_element(By.XPATH, "//input[@type='password']")
 
             # Escribir con pequeñas pausas intermedias
             user_field.send_keys(self.username)
@@ -62,10 +72,11 @@ class AuthService:
 
             # Verificar si el login fue exitoso 
             if "login" not in self.driver.current_url.lower():
-                print("Login exitoso.")
+                print("Login manual exitoso.")
                 self._save_cookies()  # Guardar las nuevas cookies
             else:
                 print("El login puede haber fallado o requiere autenticación de dos pasos (OTP).")
+
                 
         except Exception as e:
             print(f"Error en login: {e}")
