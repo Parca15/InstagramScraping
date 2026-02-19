@@ -68,14 +68,16 @@ class AuthService:
 
             # Enviar el formulario
             pass_field.submit()
-            time.sleep(10)
+            
+            print("Esperando 60 segundos para permitir el ingreso de OTP o validaciones manuales...")
+            time.sleep(60)
 
             # Verificar si el login fue exitoso 
             if "login" not in self.driver.current_url.lower():
                 print("Login manual exitoso.")
                 self._save_cookies()  # Guardar las nuevas cookies
             else:
-                print("El login puede haber fallado o requiere autenticación de dos pasos (OTP).")
+                print("El login puede haber fallado o superó el tiempo de espera para OTP.")
 
                 
         except Exception as e:
